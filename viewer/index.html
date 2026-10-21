@@ -19,11 +19,17 @@
   #sl { left: 24px; } #sr { right: 24px; }
   @media (pointer: coarse) { .stick { display: block; } #help { display: none; } }
 </style>
+<script>
+window.addEventListener("error", e => {
+  const l = document.getElementById("loading");
+  if (l) l.innerHTML = "<div style='max-width:80%;text-align:center'>Error: " + (e.message || "script failed to load") + "<br><small>Press F12 for details</small></div>";
+});
+</script>
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-    "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/2.1.0/spark.module.js"
+    "three": "./lib/three.module.js",
+    "@sparkjsdev/spark": "./lib/spark.module.js"
   }
 }
 </script>
