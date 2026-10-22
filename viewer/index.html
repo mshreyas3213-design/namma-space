@@ -25,10 +25,12 @@ window.addEventListener("error", e => {
   if (l) l.innerHTML = "<div style='max-width:80%;text-align:center'>Error: " + (e.message || "script failed to load") + "<br><small>Press F12 for details</small></div>";
 });
 </script>
+<!-- THIS IS THE FIXED IMPORT MAP -->
 <script type="importmap">
 {
   "imports": {
     "three": "./lib/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
     "@sparkjsdev/spark": "./lib/spark.module.js"
   }
 }
@@ -49,8 +51,6 @@ window.addEventListener("error", e => {
 import * as THREE from "three";
 import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
 
-// Which splat to load. Default: ./assets/room1.spz
-// Test with any file: index.html?splat=https://sparkjs.dev/assets/splats/butterfly.spz
 const params = new URLSearchParams(location.search);
 const SPLAT_URL = params.get("splat") || "./assets/room1.spz";
 
@@ -61,13 +61,12 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 500);
-camera.position.set(0, 0, 0);
+camera.position.set(0, 1.5, 0);
 camera.rotation.order = "YXZ";
 
 const spark = new SparkRenderer({ renderer });
 scene.add(spark);
 
-// Nerfstudio/COLMAP output is usually upside-down in Three.js; F toggles the flip.
 let flipped = true;
 const splat = new SplatMesh({ url: SPLAT_URL });
 splat.quaternion.set(1, 0, 0, 0);
@@ -78,7 +77,6 @@ splat.initialized
   .then(() => loading.classList.add("done"))
   .catch(err => { loading.innerHTML = "<div>Could not load the splat file.<br><small>" + SPLAT_URL + "</small></div>"; console.error(err); });
 
-// ---- Controls ----
 const keys = {};
 let yaw = 0, pitch = 0;
 addEventListener("keydown", e => {
@@ -99,7 +97,6 @@ addEventListener("pointermove", e => {
   lx = e.clientX; ly = e.clientY;
 });
 
-// Touch sticks: left = move, right = look
 function makeStick(id) {
   const el = document.getElementById(id), knob = el.firstElementChild;
   const s = { x: 0, y: 0, id: null };
@@ -124,18 +121,24 @@ addEventListener("resize", () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-// ---- Loop ----
 const clock = new THREE.Clock();
 const fwd = new THREE.Vector3(), right = new THREE.Vector3();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
   const speed = (keys.ShiftLeft || keys.ShiftRight ? 3.0 : 1.2) * dt;
 
+   // Arrow keys to look around
+  if (keys.ArrowLeft) yaw += 1.5 * dt;
+  if (keys.ArrowRight) yaw -= 1.5 * dt;
+  if (keys.ArrowUp) pitch += 1.5 * dt;
+  if (keys.ArrowDown) pitch -= 1.5 * dt;
+
+  // Touch sticks / Mouse look
   yaw -= stickR.x * 2.0 * dt;
   pitch = Math.max(-1.5, Math.min(1.5, pitch - stickR.y * 1.5 * dt));
+  pitch = Math.max(-1.5, Math.min(1.5, pitch)); // limit looking up/down
+  
   camera.rotation.set(pitch, yaw, 0);
-
-  // Walk on the horizontal plane (ignore pitch) so looking down doesn't sink you
   fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   right.set(Math.cos(yaw), 0, -Math.sin(yaw));
   let f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - stickL.y;
